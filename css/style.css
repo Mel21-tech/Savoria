@@ -374,3 +374,35 @@ label.lib { display: block; font-size: .72rem; letter-spacing: .18em; text-trans
 .repli .assiette .icone-cat, .cat-carte .repli .icone-cat { width: 46%; max-width: none; }
 .hero-ctas .btn { padding: .9rem 1.35rem; }
 #categories { padding-top: 3rem; }
+
+/* ---------- Rangement du catalogue ---------- */
+.types { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; margin-bottom: 1.4rem; padding-bottom: .2rem; }
+.type-onglet { flex: none; padding: .6rem 1.15rem; border-radius: 999px; border: 1px solid var(--ligne); background: var(--anthracite); color: var(--gris); font-size: .8rem; letter-spacing: .04em; transition: .25s; }
+.type-onglet:hover { color: var(--creme); }
+.type-onglet.actif { background: var(--or); border-color: var(--or); color: var(--noir); font-weight: 600; }
+.puce-tendance { display: inline-flex; align-items: center; gap: .4rem; }
+.puce-tendance.actif { border-color: #e0823d; color: #f0a46a; background: rgba(224, 130, 61, .1); }
+.champ.tri { width: auto; padding: .5rem 2.4rem .5rem 1rem; font-size: .8rem; border-radius: 999px; }
+.compteur { margin-left: auto; }
+.lien-photo { position: relative; display: block; }
+.badge-tendance { position: absolute; left: .8rem; top: .8rem; z-index: 3; display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem; border-radius: 999px; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; color: #fff3e6; background: linear-gradient(120deg, rgba(224, 112, 50, .92), rgba(201, 132, 52, .92)); box-shadow: 0 6px 16px rgba(0, 0, 0, .45); }
+.rangee-tendances { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(270px, 1fr); gap: 1.4rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--or-sombre) transparent; }
+.rangee-tendances > * { scroll-snap-align: start; }
+.raccourcis-types { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; margin-top: 2.4rem; }
+@media (max-width: 760px) { .champ.tri { width: 100%; } .rangee-tendances { grid-auto-columns: 82%; } }
+@media (max-width: 760px) {
+  .page { padding-top: calc(var(--header) + 1.6rem); }
+  .entete-page { margin-bottom: 1.4rem; }
+  .entete-page h1 { font-size: 2.2rem; }
+  .filtres { grid-template-columns: 1fr 1fr 1fr; gap: .5rem; margin-bottom: .7rem; }
+  .filtres .champ { padding: .65rem .7rem; font-size: .78rem; }
+  .filtres select.champ { padding-right: 1.6rem; background-position: calc(100% - 13px) 52%, calc(100% - 8px) 52%; }
+  .filtres .recherche { font-size: .9rem; padding: .8rem 1rem; }
+  .types { margin-bottom: .9rem; }
+  .type-onglet { padding: .5rem .95rem; font-size: .76rem; }
+  .filtres-ligne2 { gap: .5rem; margin-bottom: 1.6rem; }
+  .filtres-ligne2 .muted { width: 100%; order: 5; }
+  .compteur { width: auto; margin-left: auto; font-size: .78rem; }
+  .champ.tri { width: auto; font-size: .76rem; }
+  .puce { padding: .45rem .85rem; font-size: .74rem; }
+}
