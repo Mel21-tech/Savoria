@@ -21,7 +21,7 @@ window.S = window.S || {};
   function donneesVides() {
     return {
       profil: { allergies: [], regime: "aucun", refuses: [], ustensiles: ["plaques", "four", "poele", "casserole"], niveau: "intermediaire", temps: 45, personnes: 2 },
-      consentement: false, favoris: [], aessayer: [], realisees: [], collections: [], mesRecettes: [], conversations: []
+      consentement: false, favoris: [], aessayer: [], realisees: [], collections: [], mesRecettes: [], conversations: [], courses: [], planning: {}, notes: {}
     };
   }
 

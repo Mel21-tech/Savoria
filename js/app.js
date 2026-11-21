@@ -136,6 +136,7 @@ window.S = window.S || {};
       return '<a class="cat-carte revele" href="#/recettes?cat=' + k + '"><div class="visuel">' + S.photoHTML(Object.assign({}, rep, { titre: S.CATEGORIES[k].court }), k).replace('class="photo"', 'class="photo" style="height:100%"') + "</div>" +
         '<div class="contenu"><span class="nb">' + liste.length + " recettes</span><h3>" + S.CATEGORIES[k].court + "</h3><p>" + S.CATEGORIES[k].d + "</p></div></a>";
     }).join("");
+    var saison = pub.filter(function (r) { return S.deSaison(r) && !r.tendance; });
     var sel = pub.filter(function (r) { return r.vedette; }).concat(pub.filter(function (r) { return !r.vedette && !r.tendance; }).sort(function (a, b) { return a.id < b.id ? -1 : 1; }).filter(function (_, i) { return i % 6 === 2; })).slice(0, 6);
     return '<section class="hero" id="hero"><div class="hero-scene"><div class="hero-halo"></div>' +
       '<div class="hero-grille wrap"><div class="hero-copy" id="hero-copy"><span class="sur-titre">Cuisinez · Explorez · Savourez</span>' +
@@ -148,10 +149,12 @@ window.S = window.S || {};
       '<div class="hero-phrases"><div class="hero-phrase" data-i="0">Des recettes pensées pour vous.</div><div class="hero-phrase" data-i="1">Vos allergies, vos ustensiles, votre temps.</div><div class="hero-phrase" data-i="2">Il ne reste plus qu\'à cuisiner.</div></div>' +
       '<div class="hero-progress"><i></i></div></div></section>' +
       '<section class="section" id="categories"><div class="wrap"><div class="centre revele"><span class="sur-titre">Explorer</span><h2>Que voulez-vous cuisiner ?</h2><hr class="filet centre"></div><div class="grille-cats">' + cats + "</div></div></section>" +
+      '<section class="section rdj-section" style="padding-top:0"><div class="wrap"><div id="rdj"></div></div></section>' +
       '<section class="section" style="padding-top:0"><div class="wrap"><div class="revele" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:2.4rem"><div><span class="sur-titre">' + S.FLAMME + ' Vu sur TikTok</span><h2 style="margin:0">Les tendances du moment</h2></div><a class="btn" href="#/recettes?tendance=1">Toutes les tendances</a></div>' +
       '<div class="rangee-tendances">' + pub.filter(function (r) { return r.tendance; }).slice(0, 10).map(S.carteHTML).join("") + "</div></div></section>" +
-      '<section class="section" style="padding-top:0"><div class="wrap"><div class="revele" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:2.4rem"><div><span class="sur-titre">La sélection</span><h2 style="margin:0">Nos recettes du moment</h2></div><a class="btn" href="#/recettes">Toutes les recettes</a></div>' +
-      '<div class="grille-recettes">' + sel.map(S.carteHTML).join("") + "</div>" +
+      (saison.length ? '<section class="section" style="padding-top:0"><div class="wrap"><div class="revele" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:2.4rem"><div><span class="sur-titre">' + S.FEUILLE + ' En ce moment</span><h2 style="margin:0">Les recettes ' + S.nomSaison() + '</h2></div><a class="btn" href="#/recettes?saison=1">Toutes les recettes de saison</a></div>' +
+      '<div class="rangee-tendances">' + saison.slice(0, 10).map(S.carteHTML).join("") + "</div>" : '<section class="section" style="padding-top:0"><div class="wrap">') +
+
       '<div class="raccourcis-types revele">' + Object.keys(S.TYPES).map(function (k) { return '<a class="type-onglet" href="#/recettes?type=' + k + '">' + S.TYPES[k] + "</a>"; }).join("") + "</div></div></section>" + pied();
   };
   /* Plat signature : rotation continue + rotation au scroll + inclinaison à la souris */
@@ -195,6 +198,12 @@ window.S = window.S || {};
       copie.style.transform = "translateY(" + (-30 * lisse(p / .2)) + "px)";
       halo.style.opacity = 1 - fin;
     }
+    S.recetteDuJour(function (r) {
+      var z = $("#rdj"); if (!z) return;
+      var j = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      z.innerHTML = '<a class="rdj revele" href="#/recette/' + encodeURIComponent(r.id) + '"><div class="rdj-photo">' + S.photoHTML(r) + '</div><div class="rdj-texte"><span class="sur-titre">La recette du jour · ' + j + "</span><h2>" + esc(r.titre) + '</h2><p class="muted">' + esc(r.accroche || "") + '</p><div class="meta"><span>' + ICO.horloge + S.duree(r.temps) + "</span><span>" + ICO.toque + DIFF[r.diff] + "</span><span>" + ICO.pers + r.portions + ' pers.</span></div><span class="btn plein" style="margin-top:1.6rem;align-self:flex-start">Découvrir la recette</span></div></a>';
+      reveler();
+    });
     mesurer(); surScroll();
     addEventListener("scroll", surScroll, { passive: true }); addEventListener("resize", mesurer);
     if (!tactile) addEventListener("pointermove", surSouris, { passive: true });
@@ -202,19 +211,21 @@ window.S = window.S || {};
   };
 
   /* --- Catalogue --- */
-  var etatCat = { q: "", cat: "", type: "", tendance: false, temps: "", diff: "", profil: false, ust: false, tri: "pertinence", n: 12 };
+  var etatCat = { q: "", cat: "", type: "", tendance: false, saison: false, temps: "", diff: "", profil: false, ust: false, tri: "pertinence", n: 12 };
   S.etatCat = etatCat;
   var FLAMME = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 22c4.4 0 7-3 7-7 0-4.5-4-6.5-4.5-11-2.5 1.8-4 4.4-4 7-1.2-.8-2-2.2-2.2-3.6C6.200 9.300 5 11.800 5 15c0 4 2.600 7 7 7z"/></svg>';
   S.FLAMME = FLAMME;
+  S.FEUILLE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15zM5 19l8-8"/></svg>';
   function titreCatalogue() {
+    if (etatCat.saison) return ["Recettes " + S.nomSaison(), "Les produits du moment, au meilleur de leur goût."];
     if (etatCat.tendance) return ["Tendances TikTok", "Les recettes virales du moment, testées et remises au propre."];
     if (etatCat.cat) return [S.CATEGORIES[etatCat.cat].n, S.CATEGORIES[etatCat.cat].d];
     if (etatCat.type) return [S.TYPES[etatCat.type], "Cherchez par nom, ingrédient ou envie."];
     return ["Toutes les recettes", "Cherchez par nom, ingrédient ou envie."];
   }
   pages.recettes = function (params) {
-    if (params.cat !== undefined || params.type !== undefined || params.tendance !== undefined) {
-      etatCat.cat = params.cat || ""; etatCat.type = params.type || ""; etatCat.tendance = params.tendance === "1";
+    if (params.cat !== undefined || params.type !== undefined || params.tendance !== undefined || params.saison !== undefined) {
+      etatCat.cat = params.cat || ""; etatCat.type = params.type || ""; etatCat.tendance = params.tendance === "1"; etatCat.saison = params.saison === "1";
     }
     etatCat.n = 12;
     var co = !!S.store.utilisateur(), t = titreCatalogue();
@@ -226,7 +237,7 @@ window.S = window.S || {};
       '<select class="champ" id="f-cat" aria-label="Catégorie">' + opt("", "Catégorie", etatCat.cat) + Object.keys(S.CATEGORIES).map(function (k) { return opt(k, S.CATEGORIES[k].court, etatCat.cat); }).join("") + "</select>" +
       '<select class="champ" id="f-temps" aria-label="Temps">' + opt("", "Temps", etatCat.temps) + opt(15, "15 min max", etatCat.temps) + opt(30, "30 min max", etatCat.temps) + opt(60, "1 h max", etatCat.temps) + opt(9999, "Plus d'1 h", etatCat.temps) + "</select>" +
       '<select class="champ" id="f-diff" aria-label="Difficulté">' + opt("", "Difficulté", etatCat.diff) + opt(1, "Facile", etatCat.diff) + opt(2, "Intermédiaire", etatCat.diff) + opt(3, "Confirmé", etatCat.diff) + "</select></div>" +
-      '<div class="filtres-ligne2"><button class="puce puce-tendance' + (etatCat.tendance ? " actif" : "") + '" id="f-tendance">' + FLAMME + " Tendances TikTok</button>" +
+      '<div class="filtres-ligne2"><button class="puce puce-tendance' + (etatCat.tendance ? " actif" : "") + '" id="f-tendance">' + FLAMME + " Tendances TikTok</button>" + '<button class="puce puce-tendance puce-saison' + (etatCat.saison ? " actif" : "") + '" id="f-saison">' + S.FEUILLE + " De saison</button>" +
       (co ? '<button class="puce' + (etatCat.profil ? " actif" : "") + '" id="f-profil">Compatible avec mon profil</button><button class="puce' + (etatCat.ust ? " actif" : "") + '" id="f-ust">Avec mes ustensiles</button>'
         : '<span class="muted" style="font-size:.82rem"><a class="lien-or" href="#/connexion">Connecte-toi</a> pour filtrer selon tes allergies.</span>') +
       '<span class="compteur" id="compteur"></span><select class="champ tri" id="f-tri" aria-label="Trier">' + opt("pertinence", "Trier : pertinence", etatCat.tri) + opt("rapide", "Plus rapides", etatCat.tri) + opt("facile", "Plus faciles", etatCat.tri) + opt("az", "De A à Z", etatCat.tri) + "</select></div>" +
@@ -238,6 +249,7 @@ window.S = window.S || {};
       if (etatCat.cat && r.cats.indexOf(etatCat.cat) < 0) return false;
       if (etatCat.type && r.type !== etatCat.type) return false;
       if (etatCat.tendance && !r.tendance) return false;
+      if (etatCat.saison && !S.deSaison(r)) return false;
       if (etatCat.temps) { var t = +etatCat.temps; if (t === 9999 ? r.temps <= 60 : r.temps > t) return false; }
       if (etatCat.diff && r.diff !== +etatCat.diff) return false;
       if (q) {
@@ -272,7 +284,7 @@ window.S = window.S || {};
   }
   pages.recettes.apres = function () {
     function majUrl() {
-      var q = []; if (etatCat.cat) q.push("cat=" + etatCat.cat); if (etatCat.type) q.push("type=" + etatCat.type); if (etatCat.tendance) q.push("tendance=1");
+      var q = []; if (etatCat.cat) q.push("cat=" + etatCat.cat); if (etatCat.type) q.push("type=" + etatCat.type); if (etatCat.tendance) q.push("tendance=1"); if (etatCat.saison) q.push("saison=1");
       history.replaceState(null, "", "#/recettes" + (q.length ? "?" + q.join("&") : ""));
       var t = titreCatalogue(); $("#titre-cat").textContent = t[0]; $("#desc-cat").textContent = t[1];
     }
@@ -291,6 +303,7 @@ window.S = window.S || {};
     $$("#f-types [data-type]").forEach(function (b) {
       b.onclick = function () { etatCat.type = b.dataset.type; etatCat.n = 12; $$("#f-types [data-type]").forEach(function (x) { x.classList.toggle("actif", x === b); }); majUrl(); rendre(); };
     });
+    $("#f-saison").onclick = function () { etatCat.saison = !etatCat.saison; etatCat.n = 12; this.classList.toggle("actif"); majUrl(); rendre(); };
     $("#f-tendance").onclick = function () { etatCat.tendance = !etatCat.tendance; etatCat.n = 12; this.classList.toggle("actif"); majUrl(); rendre(); };
     var fp = $("#f-profil"); if (fp) fp.onclick = function () { etatCat.profil = !etatCat.profil; fp.classList.toggle("actif"); rendre(); };
     var fu = $("#f-ust"); if (fu) fu.onclick = function () { etatCat.ust = !etatCat.ust; fu.classList.toggle("actif"); rendre(); };
@@ -313,14 +326,23 @@ window.S = window.S || {};
       if (c.refuses.length) alertes += '<div class="bandeau-info">Contient un aliment que tu n\'aimes pas : ' + c.refuses.map(function (k) { return S.ING[k].n; }).join(", ") + "</div>";
       if (c.inconnus) alertes += '<div class="bandeau-alerte">' + ICO.alerte + "<span>Allergènes non vérifiés pour : " + r._inconnus.map(esc).join(", ") + ".</span></div>";
     }
-    var btn = function (liste, txt) { var a = estDans(liste, r.id); return '<button class="btn petit' + (a ? " plein actif" : " discret") + '" data-liste="' + liste + '">' + (a ? "✓ " : "") + txt + "</button>"; };
+    var IC = {
+      favoris: '<path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 7.9 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/>',
+      aessayer: '<path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"/>',
+      realisees: '<circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.2 2.6 2.6 4.8-5.4"/>',
+      coll: '<path d="M3.5 6.5h6l2 2h9v10.5h-17z"/><path d="M12 11.5v5M9.5 14h5"/>',
+      partager: '<path d="M4.5 12.5v7h15v-7M12 3.5v11.5M8 7.5l4-4 4 4"/>'
+    };
+    var ico = function (k, lib, attr, actif) { return '<button class="act-ico' + (actif ? " actif" : "") + '" ' + attr + ' aria-label="' + lib + '" data-lib="' + lib + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + IC[k] + "</svg></button>"; };
+    var btn = function (liste, txt) { var a = estDans(liste, r.id); return ico(liste, a ? txt + " ✓" : txt, 'data-liste="' + liste + '"', a); };
     var tf = r._a.transformes.length;
     return '<section class="fiche-hero">' + S.photoHTML(r) + '<div class="contenu wrap"><span class="sur-titre">' + (r.tendance ? "Tendance TikTok · " : "") + (S.TYPES[r.type] ? S.TYPES[r.type] + " · " : "") + r.cats.map(function (k) { return S.CATEGORIES[k] ? S.CATEGORIES[k].court : k; }).join(" · ") + (r.statut === "privee" ? " · Ma recette" : "") + "</span><h1>" + esc(r.titre) + "</h1>" +
       (r.accroche ? '<p class="muted" style="max-width:640px;font-size:1.05rem">' + esc(r.accroche) + "</p>" : "") +
       '<div class="fiche-infos"><div><small>Temps total</small><strong>' + S.duree(r.temps) + "</strong></div><div><small>Préparation</small><strong>" + S.duree(r.prep || r.temps) + "</strong></div><div><small>Difficulté</small><strong>" + DIFF[r.diff] + "</strong></div><div><small>Base</small><strong>" + r.portions + " pers.</strong></div></div></div></section>" +
-      '<div class="wrap"><div class="fiche-actions">' + btn("favoris", "Favori") + btn("aessayer", "À essayer") + btn("realisees", "Déjà réalisée") + '<button class="btn petit discret" id="btn-coll">+ Collection</button>' +
-      (r.statut === "privee" ? '<a class="btn petit discret" href="#/espace?t=mesrecettes&edit=' + encodeURIComponent(r.id) + '">Modifier</a>' : "") +
-      (S.store.estAdmin() && r.statut !== "privee" ? '<a class="btn petit discret" href="#/admin?edit=' + encodeURIComponent(r.id) + '">Modifier (admin)</a>' : "") + "</div>" +
+      '<div class="wrap"><div class="fiche-actions"><button class="btn plein" id="btn-cuisine">Mode cuisine</button><button class="btn discret" id="btn-courses"><span class="lg">Ajouter aux </span>courses</button><button class="btn discret" id="btn-planifier">Planifier</button>' +
+      '<div class="actions-icones">' + btn("favoris", "Favori") + btn("aessayer", "À essayer") + btn("realisees", "Déjà réalisée") + ico("coll", "Ajouter à une collection", 'id="btn-coll"') + ico("partager", "Partager", 'id="btn-partager"') + "</div>" +
+      (r.statut === "privee" ? '<a class="lien-or lien-modif" href="#/espace?t=mesrecettes&edit=' + encodeURIComponent(r.id) + '">Modifier</a>' : "") +
+      (S.store.estAdmin() && r.statut !== "privee" ? '<a class="lien-or lien-modif" href="#/admin?edit=' + encodeURIComponent(r.id) + '">Modifier (admin)</a>' : "") + "</div>" +
       (alertes ? '<div style="display:flex;flex-direction:column;gap:.6rem;margin-top:1.4rem;max-width:760px">' + alertes + "</div>" : "") +
       '<div class="fiche-corps"><aside><div class="bloc"><div class="portions"><div><label class="lib" style="margin:0">Portions</label></div><div class="ctrl"><button id="moins" aria-label="Moins">−</button><strong id="nb-p">' + n + '</strong><button id="plusp" aria-label="Plus">+</button></div></div><ul class="liste-ing" id="liste-ing"></ul>' +
       (tf ? '<p class="muted" style="font-size:.74rem;margin:1rem 0 0">* Produit du commerce : vérifie la liste des allergènes sur l\'étiquette.</p>' : "") + "</div>" +
@@ -329,7 +351,9 @@ window.S = window.S || {};
       '<p style="margin:0 0 .4rem;font-size:.88rem"><span class="muted">Contient :</span> ' + (r._a.contient.length ? r._a.contient.map(function (a) { return S.ALLERGENES[a]; }).join(", ") : "aucun des 14 allergènes réglementaires") + "</p>" +
       (r._a.traces.length ? '<p style="margin:0 0 .4rem;font-size:.88rem"><span class="muted">Peut contenir :</span> ' + r._a.traces.map(function (a) { return S.ALLERGENES[a]; }).join(", ") + "</p>" : "") +
       '<p class="muted" style="font-size:.74rem;margin:.8rem 0 0">Informations indicatives. Risque de contamination croisée selon les produits utilisés et ta cuisine : vérifie toujours les étiquettes.</p></div></aside>' +
-      '<div><span class="sur-titre">Préparation</span><h2 style="margin-bottom:2rem">Étapes</h2><ol class="etapes">' + r.etapes.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ol></div></div></div>" + pied();
+      '<div><span class="sur-titre">Préparation</span><h2 style="margin-bottom:2rem">Étapes</h2><ol class="etapes">' + r.etapes.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ol>" +
+      (S.store.utilisateur() ? '<div class="notes-perso"><label class="lib" for="notes">Mes notes</label><textarea class="champ" id="notes" rows="3" placeholder="Un peu moins de sel, parfait avec du riz…">' + esc((S.store.donnees().notes || {})[r.id] || "") + '</textarea><small class="muted" id="notes-etat">Visibles par toi seul.</small></div>' : "") +
+      "</div></div></div>" + pied();
   };
   pages.recette.apres = function (params, id) {
     var r = S.store.recette(id); if (!r) return;
@@ -357,6 +381,12 @@ window.S = window.S || {};
       };
     });
     $("#btn-coll").onclick = function () { if (exigerCompte()) choisirCollection(id); };
+    $("#btn-cuisine").onclick = function () { S.modeCuisine(r, n); };
+    $("#btn-courses").onclick = function () { if (!exigerCompte()) return; S.ajouterAuxCourses(r, n); S.toast("Ingrédients ajoutés à ta liste de courses (" + n + " pers.)"); };
+    $("#btn-planifier").onclick = function () { if (exigerCompte()) S.planifier(id, n); };
+    $("#btn-partager").onclick = function () { S.partager(r); };
+    var na = $("#notes"), tn;
+    if (na) na.oninput = function () { clearTimeout(tn); $("#notes-etat").textContent = "…"; tn = setTimeout(function () { S.store.modifier(function (d) { d.notes = d.notes || {}; if (na.value.trim()) d.notes[id] = na.value; else delete d.notes[id]; }); $("#notes-etat").textContent = "Enregistré"; }, 500); };
   };
 
   function exigerCompte() {
@@ -419,11 +449,11 @@ window.S = window.S || {};
   };
 
   /* --- Mon espace --- */
-  var ONGLETS = [["profil", "Mon profil"], ["favoris", "Mes favoris"], ["realisees", "Déjà réalisées"], ["aessayer", "À essayer"], ["collections", "Mes collections"], ["mesrecettes", "Mes recettes"]];
+  var ONGLETS = [["profil", "Mon profil"], ["favoris", "Mes favoris"], ["realisees", "Déjà réalisées"], ["aessayer", "À essayer"], ["collections", "Mes collections"], ["mesrecettes", "Mes recettes"], ["planning", "Planning"], ["courses", "Courses"]];
   pages.espace = function (params) {
     var u = S.store.utilisateur(); if (!u) { setTimeout(function () { go("#/connexion"); }); return ""; }
     var d = S.store.donnees(), t = params.t || "favoris";
-    var nb = { favoris: d.favoris.length, realisees: d.realisees.length, aessayer: d.aessayer.length, collections: d.collections.length, mesrecettes: d.mesRecettes.length };
+    var nb = { favoris: d.favoris.length, realisees: d.realisees.length, aessayer: d.aessayer.length, collections: d.collections.length, mesrecettes: d.mesRecettes.length, courses: (d.courses || []).filter(function (c) { return !c.coche; }).length };
     return '<div class="page"><div class="wrap"><div class="entete-page"><span class="sur-titre">Mon espace</span><h1>Bonjour ' + esc(u.nom) + "</h1></div>" +
       '<div class="onglets">' + ONGLETS.map(function (o) { return '<button data-t="' + o[0] + '" class="' + (t === o[0] ? "actif" : "") + '">' + o[1] + (nb[o[0]] !== undefined ? '<span class="nb">' + nb[o[0]] + "</span>" : "") + "</button>"; }).join("") + "</div>" +
       '<div id="contenu-espace"></div></div></div>' + pied();
@@ -433,7 +463,7 @@ window.S = window.S || {};
     var t = params.t || "favoris";
     $$(".onglets button").forEach(function (b) { b.onclick = function () { go("#/espace?t=" + b.dataset.t); }; });
     var zone = $("#contenu-espace");
-    ({ profil: vueProfil, favoris: vueListe, realisees: vueListe, aessayer: vueListe, collections: vueCollections, mesrecettes: vueMesRecettes })[t](zone, t, params);
+    ({ profil: vueProfil, favoris: vueListe, realisees: vueListe, aessayer: vueListe, collections: vueCollections, mesrecettes: vueMesRecettes, planning: S.vuePlanning, courses: S.vueCourses })[t](zone, t, params);
   };
 
   function cases(nom, obj, coches) {
@@ -658,7 +688,7 @@ window.S = window.S || {};
   };
   pages.confidentialite = function () {
     return '<div class="page"><div class="wrap texte-legal"><span class="sur-titre">Vos données</span><h1>Politique de confidentialité</h1>' +
-      "<h2>Données collectées</h2><p>Prénom, adresse email, mot de passe (chiffré), profil culinaire (régime, aliments non aimés, ustensiles, niveau, temps, nombre de personnes), listes de recettes, recettes personnelles et historique de l'assistant.</p>" +
+      "<h2>Données collectées</h2><p>Prénom, adresse email, mot de passe (chiffré), profil culinaire (régime, aliments non aimés, ustensiles, niveau, temps, nombre de personnes), listes de recettes, recettes personnelles, notes, liste de courses, planning de la semaine et historique de l'assistant.</p>" +
       "<h2>Allergies et intolérances</h2><p>Ces informations sont des données de santé. Elles ne sont enregistrées qu'avec ton consentement explicite et servent uniquement à adapter les recettes proposées. Tu peux les supprimer à tout moment depuis ton profil.</p>" +
       "<h2>Où sont stockées les données ?</h2><p>Dans cette version maquette, toutes les données restent dans ton navigateur, sur ton appareil. Elles ne sont envoyées à aucun serveur.</p>" +
       "<h2>Tes droits</h2><p>Tu peux consulter, modifier et supprimer tes données à tout moment depuis « Mon espace », y compris supprimer définitivement ton compte. Pour toute question : [email de contact].</p>" +
