@@ -25,6 +25,8 @@ window.S = window.S || {};
       if (c.refuses.length) { ecart.refuses++; return false; }
       if (opts.cat && r.cats.indexOf(opts.cat) < 0) return false;
       if (opts.tempsMax && r.temps > opts.tempsMax) return false;
+      if (opts.tendance && !r.tendance) return false;
+      if (opts.type && r.type !== opts.type) return false;
       r._c = c; return true;
     });
     return { liste: l, ecart: ecart, profil: p };
@@ -70,6 +72,8 @@ window.S = window.S || {};
     var veutSubst = attente === "subst" || /remplac|manque|alternative|a la place|substitu|j ai plus de|je n ai plus|je n ai pas de|pas de |plus de /.test(t);
     var rapide = /rapide|vite|presse|express|pas le temps|peu de temps|(10|15|20) ?min/.test(t);
     var cat = null; CATS_MOTS.forEach(function (c) { if (!cat && c[0].test(t)) cat = c[1]; });
+    var tendance = /tendance|tiktok|viral|a la mode/.test(t);
+    var type = /petit dej|brunch|matin/.test(t) ? "petitdej" : /entree/.test(t) ? "entree" : /apero/.test(t) ? "aperitif" : /accompagnement/.test(t) ? "accompagnement" : null;
 
     if (veutSubst && ings.length && !/j ai |avec /.test(t.replace(/j ai plus|je n ai/g, ""))) {
       ings.forEach(function (k) {
@@ -84,10 +88,12 @@ window.S = window.S || {};
 
     if (attente === "ingredients" && !ings.length) return [{ texte: "Je n'ai reconnu aucun ingrédient. Essaie avec des mots simples, séparés par des virgules : « œufs, tomates, oignon »." }];
 
-    if (ings.length || rapide || cat || /quoi|idee|propose|suggest|faim|ce soir|manger|cuisiner|recette/.test(t)) {
-      var opts = { ingredients: ings, tempsMax: rapide ? 25 : null, cat: cat };
+    if (ings.length || rapide || cat || tendance || type || /quoi|idee|propose|suggest|faim|ce soir|manger|cuisiner|recette/.test(t)) {
+      var opts = { ingredients: ings, tempsMax: rapide ? 25 : null, cat: cat, tendance: tendance, type: type };
       var r = chercher(opts), intro;
       if (ings.length) intro = "Avec " + esc(liste(nomsIng(ings))) + ", voici ce que tu peux préparer :";
+      else if (tendance) intro = "Voici les recettes tendance sur TikTok compatibles avec ton profil :";
+      else if (type) intro = "Voici des idées « " + S.TYPES[type].toLowerCase() + " » adaptées à ton profil :";
       else if (rapide) intro = "Voici des idées prêtes en 25 minutes maximum, adaptées à ton profil :";
       else if (cat) intro = "Voici une sélection " + S.CATEGORIES[cat].court.toLowerCase() + " adaptée à ton profil :";
       else intro = "Voici mes suggestions selon ton profil et ton temps disponible :";
@@ -189,7 +195,7 @@ window.S = window.S || {};
       p.innerHTML = '<div class="as-tete"><div class="avatar">S</div><div><strong>Assistant SAVORIA</strong><small>Trouve quoi cuisiner en quelques secondes</small></div><button class="fermer" aria-label="Fermer">×</button></div>' +
         '<div class="as-onglets"><button data-o="chat" class="actif">Discussion</button><button data-o="histo">Historique</button><button class="nouv" id="as-nouv">+ Nouvelle</button></div>' +
         '<div class="as-corps" id="as-corps"></div>' +
-        '<div class="as-rapides" id="as-rapides"><button data-r="avec">Avec ce que j\'ai</button><button data-r="rapide">Repas rapide</button><button data-r="subst">Remplacer un ingrédient</button></div>' +
+        '<div class="as-rapides" id="as-rapides"><button data-r="avec">Avec ce que j\'ai</button><button data-r="rapide">Repas rapide</button><button data-r="subst">Remplacer un ingrédient</button><button data-r="tendance">Tendances TikTok</button></div>' +
         '<form class="as-saisie" id="as-saisie"><input id="as-input" placeholder="J\'ai du poulet, du riz et un poivron…" autocomplete="off" aria-label="Ton message"><button aria-label="Envoyer">' + ICO_ENV + "</button></form>";
       document.body.appendChild(p); document.body.appendChild(b);
       b.onclick = function () { ouvrir(); };
@@ -201,6 +207,7 @@ window.S = window.S || {};
         x.onclick = function () {
           var r = x.dataset.r;
           if (r === "rapide") { etat.conv = null; envoyer("Une idée de repas rapide", true); return; }
+          if (r === "tendance") { etat.conv = null; envoyer("Les recettes tendance sur TikTok", true); return; }
           if (r === "avec") { etat.conv = null; etat.attente = "ingredients"; rendreCorps(); var c = $("#as-corps"); c.insertAdjacentHTML("beforeend", '<div class="msg bot"><p>Écris-moi les ingrédients que tu as, séparés par des virgules.</p></div>'); c.scrollTop = c.scrollHeight; $("#as-input").focus(); return; }
           if (r === "subst") { etat.attente = "subst"; var c2 = $("#as-corps"); c2.insertAdjacentHTML("beforeend", '<div class="msg bot"><p>Quel ingrédient te manque ?</p></div>'); c2.scrollTop = c2.scrollHeight; $("#as-input").focus(); }
         };

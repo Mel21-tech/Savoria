@@ -38,7 +38,7 @@ window.S = window.S || {};
     if (u === "pincée" || u === "brins") { var n = Math.max(1, Math.round(v)); return n + " " + (u === "pincée" ? (n > 1 ? "pincées" : "pincée") : (n > 1 ? "brins" : "brin")); }
     if (u === "c. à s." || u === "c. à c.") return frac(Math.max(.25, Math.round(v * 2) / 2)) + " " + u;
     var p = Math.round(v * 2) / 2; if (p < .5) p = .5;
-    return frac(p);
+    return frac(p) + (u ? " " + u : "");
   };
   S.nomIng = function (i, f) {
     var ing = S.ING[i[2]];
@@ -92,10 +92,11 @@ window.S = window.S || {};
     if (c && c.danger) alerte = '<div class="bandeau-alerte">' + ICO.alerte + "<span>Contient " + (c.allergenes.length ? "" : "peut-être ") + "un de tes allergènes : " + c.allergenes.concat(c.traces).map(function (a) { return S.ALLERGENES[a]; }).join(", ") + "</span></div>";
     else if (c && c.regime) alerte = '<div class="bandeau-alerte">' + ICO.alerte + "<span>Non compatible avec ton régime " + S.REGIMES[p.regime].n.toLowerCase() + "</span></div>";
     else if (c && c.ustManquants.length) alerte = '<div class="bandeau-info">Il te manque : ' + c.ustManquants.map(function (u) { return S.USTENSILES[u]; }).join(", ") + "</div>";
+    var tend = r.tendance ? '<span class="badge-tendance">' + S.FLAMME + " Tendance</span>" : "";
     var priv = r.statut === "privee" ? '<span class="pastille or">Ma recette</span>' : r.statut === "attente" ? '<span class="pastille alerte">En attente</span>' : "";
     return '<article class="carte revele">' +
       '<button class="coeur' + (estDans("favoris", r.id) ? " actif" : "") + '" data-fav="' + esc(r.id) + '" aria-label="Ajouter aux favoris">' + ICO.coeur + "</button>" +
-      '<a href="#/recette/' + encodeURIComponent(r.id) + '">' + S.photoHTML(r) + "</a>" +
+      '<a href="#/recette/' + encodeURIComponent(r.id) + '" class="lien-photo">' + S.photoHTML(r) + tend + "</a>" +
       '<div class="corps"><a href="#/recette/' + encodeURIComponent(r.id) + '"><h3>' + esc(r.titre) + "</h3></a>" +
       '<div class="meta"><span>' + ICO.horloge + S.duree(r.temps) + "</span><span>" + ICO.toque + DIFF[r.diff] + "</span><span>" + ICO.pers + r.portions + " pers.</span></div>" +
       '<div class="pastilles">' + priv + al + "</div>" + alerte + "</div></article>";
@@ -135,7 +136,7 @@ window.S = window.S || {};
       return '<a class="cat-carte revele" href="#/recettes?cat=' + k + '"><div class="visuel">' + S.photoHTML(Object.assign({}, rep, { titre: S.CATEGORIES[k].court }), k).replace('class="photo"', 'class="photo" style="height:100%"') + "</div>" +
         '<div class="contenu"><span class="nb">' + liste.length + " recettes</span><h3>" + S.CATEGORIES[k].court + "</h3><p>" + S.CATEGORIES[k].d + "</p></div></a>";
     }).join("");
-    var sel = pub.filter(function (r) { return r.vedette; }).concat(pub.filter(function (r) { return !r.vedette; }).sort(function (a, b) { return a.id < b.id ? -1 : 1; }).filter(function (_, i) { return i % 6 === 2; })).slice(0, 6);
+    var sel = pub.filter(function (r) { return r.vedette; }).concat(pub.filter(function (r) { return !r.vedette && !r.tendance; }).sort(function (a, b) { return a.id < b.id ? -1 : 1; }).filter(function (_, i) { return i % 6 === 2; })).slice(0, 6);
     return '<section class="hero" id="hero"><div class="hero-scene"><div class="hero-halo"></div>' +
       '<div class="hero-grille wrap"><div class="hero-copy" id="hero-copy"><span class="sur-titre">Cuisinez · Explorez · Savourez</span>' +
       "<h1>L'art de cuisiner, <em>à votre image</em></h1>" +
@@ -147,8 +148,11 @@ window.S = window.S || {};
       '<div class="hero-phrases"><div class="hero-phrase" data-i="0">Des recettes pensées pour vous.</div><div class="hero-phrase" data-i="1">Vos allergies, vos ustensiles, votre temps.</div><div class="hero-phrase" data-i="2">Il ne reste plus qu\'à cuisiner.</div></div>' +
       '<div class="hero-progress"><i></i></div></div></section>' +
       '<section class="section" id="categories"><div class="wrap"><div class="centre revele"><span class="sur-titre">Explorer</span><h2>Que voulez-vous cuisiner ?</h2><hr class="filet centre"></div><div class="grille-cats">' + cats + "</div></div></section>" +
+      '<section class="section" style="padding-top:0"><div class="wrap"><div class="revele" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:2.4rem"><div><span class="sur-titre">' + S.FLAMME + ' Vu sur TikTok</span><h2 style="margin:0">Les tendances du moment</h2></div><a class="btn" href="#/recettes?tendance=1">Toutes les tendances</a></div>' +
+      '<div class="rangee-tendances">' + pub.filter(function (r) { return r.tendance; }).slice(0, 10).map(S.carteHTML).join("") + "</div></div></section>" +
       '<section class="section" style="padding-top:0"><div class="wrap"><div class="revele" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin-bottom:2.4rem"><div><span class="sur-titre">La sélection</span><h2 style="margin:0">Nos recettes du moment</h2></div><a class="btn" href="#/recettes">Toutes les recettes</a></div>' +
-      '<div class="grille-recettes">' + sel.map(S.carteHTML).join("") + "</div></div></section>" + pied();
+      '<div class="grille-recettes">' + sel.map(S.carteHTML).join("") + "</div>" +
+      '<div class="raccourcis-types revele">' + Object.keys(S.TYPES).map(function (k) { return '<a class="type-onglet" href="#/recettes?type=' + k + '">' + S.TYPES[k] + "</a>"; }).join("") + "</div></div></section>" + pied();
   };
   /* Plat signature : rotation continue + rotation au scroll + inclinaison à la souris */
   pages.accueil.apres = function () {
@@ -198,29 +202,46 @@ window.S = window.S || {};
   };
 
   /* --- Catalogue --- */
-  var etatCat = { q: "", cat: "", temps: "", diff: "", profil: false, ust: false, n: 12 };
+  var etatCat = { q: "", cat: "", type: "", tendance: false, temps: "", diff: "", profil: false, ust: false, tri: "pertinence", n: 12 };
+  S.etatCat = etatCat;
+  var FLAMME = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 22c4.4 0 7-3 7-7 0-4.5-4-6.5-4.5-11-2.5 1.8-4 4.4-4 7-1.2-.8-2-2.2-2.2-3.6C6.200 9.300 5 11.800 5 15c0 4 2.600 7 7 7z"/></svg>';
+  S.FLAMME = FLAMME;
+  function titreCatalogue() {
+    if (etatCat.tendance) return ["Tendances TikTok", "Les recettes virales du moment, testées et remises au propre."];
+    if (etatCat.cat) return [S.CATEGORIES[etatCat.cat].n, S.CATEGORIES[etatCat.cat].d];
+    if (etatCat.type) return [S.TYPES[etatCat.type], "Cherchez par nom, ingrédient ou envie."];
+    return ["Toutes les recettes", "Cherchez par nom, ingrédient ou envie."];
+  }
   pages.recettes = function (params) {
-    if (params.cat !== undefined) etatCat.cat = params.cat;
+    if (params.cat !== undefined || params.type !== undefined || params.tendance !== undefined) {
+      etatCat.cat = params.cat || ""; etatCat.type = params.type || ""; etatCat.tendance = params.tendance === "1";
+    }
     etatCat.n = 12;
-    var co = !!S.store.utilisateur();
-    var opt = function (v, t, cur) { return '<option value="' + v + '"' + (String(cur) === String(v) ? " selected" : "") + ">" + t + "</option>"; };
-    return '<div class="page"><div class="wrap"><div class="entete-page"><span class="sur-titre">Le carnet</span><h1>' + (etatCat.cat ? S.CATEGORIES[etatCat.cat].n : "Toutes les recettes") + '</h1><p class="muted">' + (etatCat.cat ? S.CATEGORIES[etatCat.cat].d : "Cherchez par nom, ingrédient ou envie.") + "</p></div>" +
+    var co = !!S.store.utilisateur(), t = titreCatalogue();
+    var opt = function (v, x, cur) { return '<option value="' + v + '"' + (String(cur) === String(v) ? " selected" : "") + ">" + x + "</option>"; };
+    var types = [["", "Tout"]].concat(Object.keys(S.TYPES).map(function (k) { return [k, S.TYPES[k]]; }));
+    return '<div class="page"><div class="wrap"><div class="entete-page"><span class="sur-titre">Le carnet</span><h1 id="titre-cat">' + t[0] + '</h1><p class="muted" id="desc-cat">' + t[1] + "</p></div>" +
+      '<div class="types" id="f-types">' + types.map(function (x) { return '<button class="type-onglet' + (etatCat.type === x[0] ? " actif" : "") + '" data-type="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>" +
       '<div class="filtres"><input class="champ recherche" id="f-q" placeholder="Rechercher une recette ou un ingrédient…" value="' + esc(etatCat.q) + '">' +
-      '<select class="champ" id="f-cat">' + opt("", "Toutes catégories", etatCat.cat) + Object.keys(S.CATEGORIES).map(function (k) { return opt(k, S.CATEGORIES[k].court, etatCat.cat); }).join("") + "</select>" +
-      '<select class="champ" id="f-temps">' + opt("", "Tous les temps", etatCat.temps) + opt(15, "15 min max", etatCat.temps) + opt(30, "30 min max", etatCat.temps) + opt(60, "1 h max", etatCat.temps) + opt(9999, "Plus d'1 h", etatCat.temps) + "</select>" +
-      '<select class="champ" id="f-diff">' + opt("", "Toutes difficultés", etatCat.diff) + opt(1, "Facile", etatCat.diff) + opt(2, "Intermédiaire", etatCat.diff) + opt(3, "Confirmé", etatCat.diff) + "</select></div>" +
-      '<div class="filtres-ligne2">' + (co ? '<button class="puce' + (etatCat.profil ? " actif" : "") + '" id="f-profil">Compatible avec mon profil</button><button class="puce' + (etatCat.ust ? " actif" : "") + '" id="f-ust">Avec mes ustensiles</button>'
-        : '<span class="muted" style="font-size:.85rem"><a class="lien-or" href="#/connexion">Connecte-toi</a> pour filtrer selon tes allergies et tes ustensiles.</span>') +
-      '<span class="compteur" id="compteur"></span></div><div class="grille-recettes" id="grille"></div><div class="centre" style="margin-top:2.6rem"><button class="btn discret" id="plus">Voir plus de recettes</button></div></div></div>' + pied();
+      '<select class="champ" id="f-cat" aria-label="Catégorie">' + opt("", "Catégorie", etatCat.cat) + Object.keys(S.CATEGORIES).map(function (k) { return opt(k, S.CATEGORIES[k].court, etatCat.cat); }).join("") + "</select>" +
+      '<select class="champ" id="f-temps" aria-label="Temps">' + opt("", "Temps", etatCat.temps) + opt(15, "15 min max", etatCat.temps) + opt(30, "30 min max", etatCat.temps) + opt(60, "1 h max", etatCat.temps) + opt(9999, "Plus d'1 h", etatCat.temps) + "</select>" +
+      '<select class="champ" id="f-diff" aria-label="Difficulté">' + opt("", "Difficulté", etatCat.diff) + opt(1, "Facile", etatCat.diff) + opt(2, "Intermédiaire", etatCat.diff) + opt(3, "Confirmé", etatCat.diff) + "</select></div>" +
+      '<div class="filtres-ligne2"><button class="puce puce-tendance' + (etatCat.tendance ? " actif" : "") + '" id="f-tendance">' + FLAMME + " Tendances TikTok</button>" +
+      (co ? '<button class="puce' + (etatCat.profil ? " actif" : "") + '" id="f-profil">Compatible avec mon profil</button><button class="puce' + (etatCat.ust ? " actif" : "") + '" id="f-ust">Avec mes ustensiles</button>'
+        : '<span class="muted" style="font-size:.82rem"><a class="lien-or" href="#/connexion">Connecte-toi</a> pour filtrer selon tes allergies.</span>') +
+      '<span class="compteur" id="compteur"></span><select class="champ tri" id="f-tri" aria-label="Trier">' + opt("pertinence", "Trier : pertinence", etatCat.tri) + opt("rapide", "Plus rapides", etatCat.tri) + opt("facile", "Plus faciles", etatCat.tri) + opt("az", "De A à Z", etatCat.tri) + "</select></div>" +
+      '<div class="grille-recettes" id="grille"></div><div class="centre" style="margin-top:2.6rem"><button class="btn discret" id="plus">Voir plus de recettes</button></div></div></div>' + pied();
   };
   function filtrer() {
     var p = profil(), q = S.norm(etatCat.q);
     var l = S.store.pourMoi().filter(function (r) {
       if (etatCat.cat && r.cats.indexOf(etatCat.cat) < 0) return false;
+      if (etatCat.type && r.type !== etatCat.type) return false;
+      if (etatCat.tendance && !r.tendance) return false;
       if (etatCat.temps) { var t = +etatCat.temps; if (t === 9999 ? r.temps <= 60 : r.temps > t) return false; }
       if (etatCat.diff && r.diff !== +etatCat.diff) return false;
       if (q) {
-        var txt = S.norm(r.titre + " " + r.ing.map(function (i) { return S.nomIng(i, 1); }).join(" "));
+        var txt = S.norm(r.titre + " " + (S.TYPES[r.type] || "") + " " + r.ing.map(function (i) { return S.nomIng(i, 1); }).join(" "));
         if (!q.split(" ").every(function (m) { return txt.indexOf(m) >= 0; })) return false;
       }
       if (p && (etatCat.profil || etatCat.ust)) {
@@ -230,7 +251,14 @@ window.S = window.S || {};
       }
       return true;
     });
-    if (p) l.sort(function (a, b) { return score(b, p) - score(a, p); });
+    var tri = etatCat.tri;
+    l.sort(function (a, b) {
+      if (tri === "rapide") return a.temps - b.temps;
+      if (tri === "facile") return a.diff - b.diff || a.temps - b.temps;
+      if (tri === "az") return a.titre.localeCompare(b.titre, "fr");
+      if (p) { var d = score(b, p) - score(a, p); if (d) return d; }
+      return ((b.vedette ? 2 : 0) + (b.tendance ? 1 : 0)) - ((a.vedette ? 2 : 0) + (a.tendance ? 1 : 0));
+    });
     return l;
   }
   function score(r, p) {
@@ -243,6 +271,11 @@ window.S = window.S || {};
     return s;
   }
   pages.recettes.apres = function () {
+    function majUrl() {
+      var q = []; if (etatCat.cat) q.push("cat=" + etatCat.cat); if (etatCat.type) q.push("type=" + etatCat.type); if (etatCat.tendance) q.push("tendance=1");
+      history.replaceState(null, "", "#/recettes" + (q.length ? "?" + q.join("&") : ""));
+      var t = titreCatalogue(); $("#titre-cat").textContent = t[0]; $("#desc-cat").textContent = t[1];
+    }
     function rendre() {
       var l = filtrer();
       $("#compteur").textContent = l.length + " recette" + (l.length > 1 ? "s" : "");
@@ -251,9 +284,14 @@ window.S = window.S || {};
       reveler();
     }
     var tq; $("#f-q").oninput = function (e) { clearTimeout(tq); tq = setTimeout(function () { etatCat.q = e.target.value; etatCat.n = 12; rendre(); }, 200); };
-    $("#f-cat").onchange = function (e) { etatCat.cat = e.target.value; history.replaceState(null, "", "#/recettes" + (etatCat.cat ? "?cat=" + etatCat.cat : "")); var h = $(".entete-page h1"); h.textContent = etatCat.cat ? S.CATEGORIES[etatCat.cat].n : "Toutes les recettes"; rendre(); };
-    $("#f-temps").onchange = function (e) { etatCat.temps = e.target.value; rendre(); };
-    $("#f-diff").onchange = function (e) { etatCat.diff = e.target.value; rendre(); };
+    $("#f-cat").onchange = function (e) { etatCat.cat = e.target.value; etatCat.n = 12; majUrl(); rendre(); };
+    $("#f-temps").onchange = function (e) { etatCat.temps = e.target.value; etatCat.n = 12; rendre(); };
+    $("#f-diff").onchange = function (e) { etatCat.diff = e.target.value; etatCat.n = 12; rendre(); };
+    $("#f-tri").onchange = function (e) { etatCat.tri = e.target.value; rendre(); };
+    $$("#f-types [data-type]").forEach(function (b) {
+      b.onclick = function () { etatCat.type = b.dataset.type; etatCat.n = 12; $$("#f-types [data-type]").forEach(function (x) { x.classList.toggle("actif", x === b); }); majUrl(); rendre(); };
+    });
+    $("#f-tendance").onclick = function () { etatCat.tendance = !etatCat.tendance; etatCat.n = 12; this.classList.toggle("actif"); majUrl(); rendre(); };
     var fp = $("#f-profil"); if (fp) fp.onclick = function () { etatCat.profil = !etatCat.profil; fp.classList.toggle("actif"); rendre(); };
     var fu = $("#f-ust"); if (fu) fu.onclick = function () { etatCat.ust = !etatCat.ust; fu.classList.toggle("actif"); rendre(); };
     $("#plus").onclick = function () { etatCat.n += 12; rendre(); };
@@ -277,7 +315,7 @@ window.S = window.S || {};
     }
     var btn = function (liste, txt) { var a = estDans(liste, r.id); return '<button class="btn petit' + (a ? " plein actif" : " discret") + '" data-liste="' + liste + '">' + (a ? "✓ " : "") + txt + "</button>"; };
     var tf = r._a.transformes.length;
-    return '<section class="fiche-hero">' + S.photoHTML(r) + '<div class="contenu wrap"><span class="sur-titre">' + r.cats.map(function (k) { return S.CATEGORIES[k] ? S.CATEGORIES[k].court : k; }).join(" · ") + (r.statut === "privee" ? " · Ma recette" : "") + "</span><h1>" + esc(r.titre) + "</h1>" +
+    return '<section class="fiche-hero">' + S.photoHTML(r) + '<div class="contenu wrap"><span class="sur-titre">' + (r.tendance ? "Tendance TikTok · " : "") + (S.TYPES[r.type] ? S.TYPES[r.type] + " · " : "") + r.cats.map(function (k) { return S.CATEGORIES[k] ? S.CATEGORIES[k].court : k; }).join(" · ") + (r.statut === "privee" ? " · Ma recette" : "") + "</span><h1>" + esc(r.titre) + "</h1>" +
       (r.accroche ? '<p class="muted" style="max-width:640px;font-size:1.05rem">' + esc(r.accroche) + "</p>" : "") +
       '<div class="fiche-infos"><div><small>Temps total</small><strong>' + S.duree(r.temps) + "</strong></div><div><small>Préparation</small><strong>" + S.duree(r.prep || r.temps) + "</strong></div><div><small>Difficulté</small><strong>" + DIFF[r.diff] + "</strong></div><div><small>Base</small><strong>" + r.portions + " pers.</strong></div></div></div></section>" +
       '<div class="wrap"><div class="fiche-actions">' + btn("favoris", "Favori") + btn("aessayer", "À essayer") + btn("realisees", "Déjà réalisée") + '<button class="btn petit discret" id="btn-coll">+ Collection</button>' +
@@ -492,6 +530,8 @@ window.S = window.S || {};
       '<div class="plein"><label class="lib">Nom de la recette</label><input class="champ" name="titre" required value="' + esc(r.titre || "") + '"></div>' +
       '<div class="plein"><label class="lib">Phrase de présentation (facultatif)</label><input class="champ" name="accroche" value="' + esc(r.accroche || "") + '"></div>' +
       '<div class="plein"><label class="lib">Catégories (plusieurs possibles)</label>' + cases("cats", S.CATEGORIES, r.cats) + "</div>" +
+      '<div><label class="lib">Type de plat</label><select class="champ" name="type">' + Object.keys(S.TYPES).map(function (k) { return '<option value="' + k + '"' + ((r.type || "plat") === k ? " selected" : "") + ">" + S.TYPES[k] + "</option>"; }).join("") + "</select></div>" +
+      (admin ? '<div style="display:flex;align-items:flex-end"><label class="consent"><input type="checkbox" name="tendance"' + (r.tendance ? " checked" : "") + '><span>Tendance TikTok (badge + section de l\'accueil)</span></label></div>' : '<div></div>') +
       '<div><label class="lib">Temps total (minutes)</label><input class="champ" type="number" min="1" name="temps" required value="' + r.temps + '"></div>' +
       '<div><label class="lib">Préparation (minutes)</label><input class="champ" type="number" min="1" name="prep" required value="' + (r.prep || r.temps) + '"></div>' +
       '<div><label class="lib">Difficulté</label><select class="champ" name="diff">' + [1, 2, 3].map(function (k) { return '<option value="' + k + '"' + (r.diff === k ? " selected" : "") + ">" + DIFF[k] + "</option>"; }).join("") + "</select></div>" +
@@ -533,7 +573,7 @@ window.S = window.S || {};
       if (!fd.getAll("cats").length) { $("#err-r", f).textContent = "Choisis au moins une catégorie."; return; }
       var n = Object.assign({}, r || {});
       ["_a", "_keys", "_inconnus"].forEach(function (k) { delete n[k]; });
-      n.titre = fd.get("titre").trim(); n.accroche = (fd.get("accroche") || "").trim(); n.cats = fd.getAll("cats");
+      n.titre = fd.get("titre").trim(); n.accroche = (fd.get("accroche") || "").trim(); n.cats = fd.getAll("cats"); n.type = fd.get("type") || "plat"; if (admin) { if (fd.get("tendance")) n.tendance = 1; else delete n.tendance; }
       n.temps = +fd.get("temps"); n.prep = +fd.get("prep"); n.diff = +fd.get("diff"); n.portions = +fd.get("portions");
       n.ust = fd.getAll("ust"); n.ing = parserIng(fd.get("ing")); n.etapes = String(fd.get("etapes")).split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
       var file = fd.get("photo");
