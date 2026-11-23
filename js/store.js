@@ -3,6 +3,8 @@
    Pour passer en ligne (comptes partagés entre appareils), ce fichier sera
    remplacé par une version Supabase qui garde exactement les mêmes fonctions. */
 window.S = window.S || {};
+S.CONFIG = S.CONFIG || { adminEmails: [], routeAdmin: "coulisses" };
+if (!S.CONFIG.routeAdmin) S.CONFIG.routeAdmin = "coulisses";
 
 (function () {
   var K = { users: "sav_users", session: "sav_session", admin: "sav_admin_recettes", suppr: "sav_admin_supprimees", soum: "sav_soumissions" };
