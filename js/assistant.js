@@ -17,8 +17,9 @@ window.S = window.S || {};
 
   /* ---------- Moteur de recherche ---------- */
   function candidates(opts) {
-    var d = donnees(), p = d.profil, ecart = { allergenes: 0, regime: 0, refuses: 0 };
+    var d = donnees(), p = d.profil, ecart = { allergenes: 0, regime: 0, refuses: 0 }, mode = opts.appareil || S.modeAppareil();
     var l = S.store.pourMoi().filter(function (r) {
+      if (mode && S.appareilsDe(r).indexOf(mode) < 0) return false;
       var c = S.compat(r, p);
       if (c.danger || (c.inconnus && p.allergies.length)) { ecart.allergenes++; return false; }
       if (c.regime) { ecart.regime++; return false; }
@@ -73,6 +74,7 @@ window.S = window.S || {};
     var rapide = /rapide|vite|presse|express|pas le temps|peu de temps|(10|15|20) ?min/.test(t);
     var cat = null; CATS_MOTS.forEach(function (c) { if (!cat && c[0].test(t)) cat = c[1]; });
     var tendance = /tendance|tiktok|viral|a la mode/.test(t);
+    var appareil = /air ?fryer|friteuse sans huile/.test(t) ? "airfryer" : /micro ?onde/.test(t) ? "microondes" : /sans cuisson|sans cuire|sans feu/.test(t) ? "sanscuisson" : null;
     var type = /petit dej|brunch|matin/.test(t) ? "petitdej" : /entree/.test(t) ? "entree" : /apero/.test(t) ? "aperitif" : /accompagnement/.test(t) ? "accompagnement" : null;
 
     if (veutSubst && ings.length && !/j ai |avec /.test(t.replace(/j ai plus|je n ai/g, ""))) {
@@ -88,10 +90,11 @@ window.S = window.S || {};
 
     if (attente === "ingredients" && !ings.length) return [{ texte: "Je n'ai reconnu aucun ingrédient. Essaie avec des mots simples, séparés par des virgules : « œufs, tomates, oignon »." }];
 
-    if (ings.length || rapide || cat || tendance || type || /quoi|idee|propose|suggest|faim|ce soir|manger|cuisiner|recette/.test(t)) {
-      var opts = { ingredients: ings, tempsMax: rapide ? 25 : null, cat: cat, tendance: tendance, type: type };
+    if (ings.length || rapide || cat || tendance || type || appareil || /quoi|idee|propose|suggest|faim|ce soir|manger|cuisiner|recette/.test(t)) {
+      var opts = { ingredients: ings, tempsMax: rapide ? 25 : null, cat: cat, tendance: tendance, type: type, appareil: appareil };
       var r = chercher(opts), intro;
       if (ings.length) intro = "Avec " + esc(liste(nomsIng(ings))) + ", voici ce que tu peux préparer :";
+      else if (appareil) intro = "Voici des idées " + (appareil === "sanscuisson" ? "sans cuisson" : "au " + S.APPAREILS[appareil].n.toLowerCase()).replace("au air", "à l'air") + " adaptées à ton profil :";
       else if (tendance) intro = "Voici les recettes tendance sur TikTok compatibles avec ton profil :";
       else if (type) intro = "Voici des idées « " + S.TYPES[type].toLowerCase() + " » adaptées à ton profil :";
       else if (rapide) intro = "Voici des idées prêtes en 25 minutes maximum, adaptées à ton profil :";

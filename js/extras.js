@@ -47,7 +47,8 @@ window.S = window.S || {};
 
   /* ---------- Recette du jour ---------- */
   S.recetteDuJour = function (cb) {
-    var l = S.store.publiques().filter(function (r) { return r.type !== "accompagnement"; }).sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    var base = S.store.publiques(), m = S.selonMode(base); if (m.length > 3) base = m;
+    var l = base.filter(function (r) { return r.type !== "accompagnement"; }).sort(function (a, b) { return a.id < b.id ? -1 : 1; });
     if (!l.length) return;
     var d = new Date(), seed = d.getFullYear() * 400 + d.getMonth() * 32 + d.getDate();
     var start = (seed * 2654435761 >>> 0) % l.length, essai = 0;

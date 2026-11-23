@@ -229,7 +229,9 @@ S.ING = {
   poulet_cuisses: { n: "cuisses de poulet", v: ["cuisses de poulet", "hauts de cuisse"], t: ["viande"] },
   boeuf_joue: { n: "joue ou paleron de bœuf", v: ["joue de boeuf", "paleron"], t: ["viande"] },
   saumon_fume: { n: "saumon fumé", v: ["saumon fume"], a: ["poissons"], t: ["poisson"], tf: 1 },
-  piment_frais: { n: "piment frais", v: ["piment frais", "piment rouge", "piment vert"] }
+  piment_frais: { n: "piment frais", v: ["piment frais", "piment rouge", "piment vert"] },
+  brocoli: { n: "brocoli", pl: "brocolis", v: ["brocoli", "brocolis"] },
+  chapelure: { n: "chapelure", v: ["chapelure", "panko"], a: ["gluten"], tf: 1 }
 };
 
 
