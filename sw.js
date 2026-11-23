@@ -1,9 +1,9 @@
 /* SAVORIA — service worker : l'app s'ouvre même hors connexion.
    Après une mise à jour du site, change le numéro de VERSION pour forcer le rafraîchissement. */
-const VERSION = "savoria-v1";
+const VERSION = "savoria-v3";
 const ESSENTIELS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/style.css",
-  "./js/ingredients.js", "./js/recipes.js", "./js/recettes-tendances.js", "./js/recettes-plus.js",
+  "./js/config.js", "./js/ingredients.js", "./js/nutrition.js", "./js/recipes.js", "./js/recettes-tendances.js", "./js/recettes-plus.js", "./js/recettes-appareils.js",
   "./js/store.js", "./js/app.js", "./js/extras.js", "./js/assistant.js",
   "./images/plat-signature.jpg", "./icons/icon-192.png"
 ];
