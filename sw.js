@@ -1,6 +1,6 @@
 /* SAVORIA — service worker : l'app s'ouvre même hors connexion.
    Après une mise à jour du site, change le numéro de VERSION pour forcer le rafraîchissement. */
-const VERSION = "savoria-v3";
+const VERSION = "savoria-v4";
 const ESSENTIELS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/style.css",
   "./js/config.js", "./js/ingredients.js", "./js/nutrition.js", "./js/recipes.js", "./js/recettes-tendances.js", "./js/recettes-plus.js", "./js/recettes-appareils.js",
@@ -21,6 +21,6 @@ self.addEventListener("fetch", e => {
     e.respondWith(caches.open(VERSION).then(c => c.match(req).then(r => r || fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }))));
     return;
   }
-  e.respondWith(fetch(req).then(res => { if (res.ok) caches.open(VERSION).then(c => c.put(req, res.clone())); return res; })
-    .catch(() => caches.match(req).then(r => r || caches.match("./index.html"))));
+  e.respondWith(fetch(req, { cache: "no-cache" }).then(res => { if (res.ok) caches.open(VERSION).then(c => c.put(req, res.clone())); return res; })
+    .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match("./index.html"))));
 });
